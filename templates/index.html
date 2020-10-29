@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Url Shortener</title>
+
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+	<link href="https://cdn.jsdelivr.net/npm/halfmoon@1.1.1/css/halfmoon-variables.min.css" rel="stylesheet" />
+	<script src="https://cdn.jsdelivr.net/npm/halfmoon@1.1.1/js/halfmoon.min.js"></script>
+
+	<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+
+	<style>
+		.side_painel{
+			position: fixed;
+			bottom: 10px;
+			right: 10px;
+			opacity: .5
+		}
+
+		.toggledarkmode:hover, #toTop:hover{
+			opacity: 1;
+		}
+		#refresh_icon{
+			cursor: pointer;
+		}
+
+	</style>
+
+	<script>
+
+		$(document).ready(function(){
+			$('#table').fadeIn()
+		})
+
+		function del_entry(alias){
+			var post_url = `/del/?alias=${alias}`
+			
+			$.ajax({
+			  url: post_url,
+			  type: 'POST',
+			  success: function(response) {
+			    console.log(response.status)
+			    
+		    	halfmoon.initStickyAlert({
+			      content: response.message,
+			      //title: "Success alert",
+			      alertType: "alert-" + response.status,
+			      fillType: "filled-lm"
+			    });
+
+			    get_records()
+
+			  }
+
+			});
+
+			
+		}
+
+		function get_records(){
+			$('#entrys').text('')
+			$.getJSON("/records/", function(result){
+				$.each(result.entrys, function(i, field){
+					var data = result.entrys[i]
+					$('#entrys').append(`
+						<tr>
+							<td>${data.alias}</td>
+							<td><a href="${data.url}">${data.url}</a></td>
+							<td>${data.comment}</td>
+							<td>${data.hits}</td>
+							<td class="">
+								<button onclick="del_entry('${data.alias}')" data-toggle="tooltip" data-title="Delete" class="btn btn-danger btn-sm">
+									<span class="material-icons">close</span>
+								</button>
+							</td>
+						</tr>
+					`)
+				});
+
+				$('#total_entrys').text(result.total)
+				$('#total_hits').text(result.total_hits)
+
+			});
+		}
+
+		function clear_form(){
+			alias = $('#alias').val('');
+			redirect_to = $('#redirect-to').val('');
+			comment = $('#comment').val('');
+		}
+
+		function register_entry(){
+			var alias = $('#alias').val();
+			var redirect_to = $('#redirect-to').val();
+			var comment = $('#comment').val();
+
+			var post_url = `/put/?alias=${alias}&redirect_to=${redirect_to}&comment=${comment}&hits=0`
+
+			$.ajax({
+			  url: post_url,
+			  type: 'POST',
+			  success: function(response) {
+			    console.log(response.status)
+			    
+		    	halfmoon.initStickyAlert({
+			      content: response.message,
+			      //title: "Success alert",
+			      alertType: "alert-" + response.status,
+			      fillType: "filled-lm"
+			    });
+
+			    get_records()
+			    clear_form()
+
+			  }
+
+			});
+
+		}					
+	</script>
+
+</head>
+<body class="dark-mode" onload="get_records()">
+	<iframe name="dummyframe" id="dummyframe" style="display: none;"></iframe>
+
+	<div class="container">
+
+		<h1 class="text-center">Url Shortener</h1>
+
+		<div class="container-fluid">
+			<div class="row">
+				<div class="card shadow-lg col content">
+					<h3 class="content-title">Register URL</h3>
+					<form class="col" target="dummyframe">
+						<div class="form-row">
+							<div class="col">
+								<label for="alias" class="required">Alias:</label>
+								<input type="text" class="form-control" id="alias" placeholder="git" required="required">
+							</div>
+
+							<div class="col">
+								<label for="redirect to" class="required">Redirect to:</label>
+								<input type="text" class="form-control" id="redirect-to" placeholder="https://github.com/Viniciuuz">
+							</div>
+
+							<div class="col">
+								<label for="comment">Comment:</label>
+								<input type="text" class="form-control" id="comment" placeholder="This is my github profile">
+							</div>
+						</div>
+						<button class="btn btn-primary" class="col-12" onclick="register_entry()">Register</button>
+					</form>
+
+					<div class="sticky-alerts"></div>
+
+				</div>
+
+				<div class="card shadow-lg col-4 content">
+					<h3 class="content-title">Stats</h3>
+					<div>
+						<p>Total registered: <span id="total_entrys">0</span></p>
+						<p>Total hits: <span id="total_hits">0</span></p>	
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<div class="content">
+			<h3 class="content-title">All URLs <span id="refresh_icon" onclick="get_records()" class="material-icons">loop</span></h3>
+
+			<div class="card shadow-lg m-0 table-responsive">
+				<table id="table" style="display: none" class="table table-hover">
+				  <thead>
+				    <tr>
+				      <th>Alias</th>
+				      <th>Url</th>
+				      <th>Comment</th>
+				      <th>Hits</th>
+				      <th></th>
+				    </tr>
+				  </thead>
+				  <tbody id="entrys">
+				  	<!-- {% for index, row in df.iterrows(): %}
+				        <tr>
+					      <td>{{row['alias']}}</td>
+					      <td>{{row['url']}}</td>
+					      <td>{{row['comment']}}</td>
+					      <td class="tetx-right">
+					      	<a href="{{row['url']}}"><button class="btn btn-primary col-12">Go</button>
+					      </td>
+					    </tr>
+				    {% endfor %} -->
+				    
+				  </tbody>
+				</table>
+			</div>
+			
+		</div>
+	</div>	
+
+	<div class="side_painel">
+
+		<button id="toggledarkmode" class="btn btn-primary" type="button" onclick="halfmoon.toggleDarkMode();">
+			<span class="material-icons">brightness_medium</span>
+		</button>
+
+	</div>
+
+	<footer>
+		<p class="text-center">Created by <a target="_blank" href="https://github.com/Viniciuuz">Viniciuuz</a></p>	
+	</footer>
+</body>
+</html>
